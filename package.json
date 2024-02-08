@@ -1,0 +1,23 @@
+{
+   "name": "backend",
+   "version": "1.0.0",
+   "description": "Its a professional backend structure",
+   "main": "index.js",
+   "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1",
+      "dev": "nodemon src/index.js"
+   },
+   "repository": {
+      "type": "git",
+      "url": "git remote add origin https://github.com/opurbo007/backend.git"
+   },
+   "keywords": [
+      "Express",
+      "Mongodb"
+   ],
+   "author": "Opu Pal",
+   "license": "ISC",
+   "devDependencies": {
+      "nodemon": "^3.0.3"
+   }
+}
