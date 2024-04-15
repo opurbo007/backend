@@ -24,11 +24,11 @@ const userSchema = new Schema({
     trim: true,
     index: true,
   },
-  avater: {
+  avatar: {
     type: String, //cloudinary url
-    required: [true, "Avater is required"],
+    required: [true, "Avatar is required"],
   },
-  cover: {
+  coverImage: {
     type: String, //cloudinary url
   },
   watchHistory: [
@@ -37,7 +37,7 @@ const userSchema = new Schema({
       ref: "Video",
     },
   ],
-  pasword: {
+  password: {
     type: String,
     required: [true, "Password is required"],
   },
@@ -51,7 +51,7 @@ userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     return next();
   }
-  this.pasword = bcrypt.hash(this.pasword, 10);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
