@@ -79,8 +79,8 @@ const generateAccessAndRefreshToken = async (userId) => {
       throw new ApiError(404, "User not found");
     }
 
-    const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
@@ -90,7 +90,8 @@ const generateAccessAndRefreshToken = async (userId) => {
       refreshToken,
     };
   } catch (error) {
-    throw new ApiError(500, "Token generation failed");
+    console.log("from 93 no line", error);
+    throw new ApiError(500, "Token generation failed", error);
   }
 };
 
@@ -113,8 +114,8 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 
     // check password
-    const vailed = await user.isPasswordCorrect(password);
-    if (!vailed) {
+    const valid = await user.isPasswordCorrect(password);
+    if (!valid) {
       throw new ApiError(401, "Invalid password");
     }
 
@@ -146,14 +147,14 @@ const loginUser = asyncHandler(async (req, res) => {
           200,
           {
             user: loggedInUser,
-            accessToken,
-            refreshToken,
+            accessToken: await accessToken,
+            refreshToken: await refreshToken,
           },
           "User logged In Successfully",
         ),
       );
   } catch (error) {
-    console.log(error);
+    throw new ApiError(401, error?.message || "Login failed", error);
   }
 });
 
@@ -176,8 +177,8 @@ const logOutUser = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .clearCookies("accessToken", options)
-    .clearCookies("refreshTtoken", options)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "Logout success"));
 });
 
@@ -193,6 +194,39 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     incomingRefreshToken,
     process.env.REFRESH_TOKEN_SECRET,
   );
+
+  try {
+    const user = await User.findById(decodedToken?._id);
+    if (!user) {
+      throw new ApiError(401, "Not authorized, no token");
+    }
+    if (user?.refreshToken !== incomingRefreshToken) {
+      throw new ApiError(401, "Refresh token expird or Invalid");
+    }
+    const options = {
+      httpOnly: true,
+      secure: false,
+    };
+
+    const { accessToken, newRrefreshToken } =
+      await generateAccessAndRefreshToken(user._id);
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", newRrefreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          {
+            accessToken: await accessToken,
+            refreshToken: await newRrefreshToken,
+          },
+          "User logged In Successfully",
+        ),
+      );
+  } catch (error) {
+    throw new ApiError(401, error?.message || "Invalid refreshToken");
+  }
 });
 
-export { registerUser, loginUser, logOutUser };
+export { registerUser, loginUser, logOutUser, refreshAccessToken };
